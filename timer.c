@@ -68,10 +68,12 @@ int main(int argc, char *argv[]) {
     int m = (total_seconds % 3600) / 60;
     int s = ((total_seconds % 3600) % 60);
 
-    int user_input = getchar();
-
-    if (user_input == 'p') {
-      pause_flag = !pause_flag;
+    int user_input;
+    while ((user_input = getchar()) != EOF) {
+      if (user_input == 'p') {
+        pause_flag = !pause_flag;
+        break;
+      }
     }
 
     if (total_seconds == 0)

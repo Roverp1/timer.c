@@ -71,6 +71,12 @@ int main(int argc, char *argv[]) {
     int user_input;
     while ((user_input = getchar()) != EOF) {
       if (user_input == 'p') {
+        if (pause_flag == true)
+          printf("\033[2K\033[1A");
+        else if (pause_flag == false)
+          printf("\n");
+        fflush(stdout);
+
         pause_flag = !pause_flag;
         break;
       }
@@ -80,14 +86,12 @@ int main(int argc, char *argv[]) {
       system("play -n synth 0.1 sine 1000 vol 0.5 > /dev/null 2>&1");
 
     if (!pause_flag) {
-      printf("\r%02d:%02d:%02d", h, m, s);
-      fflush(stdout);
-
+      printf("\r\033[2K%02d:%02d:%02d", h, m, s);
       total_seconds--;
     } else {
-      printf("\rPAUSED...");
-      fflush(stdout);
+      printf("\033[2K\rPAUSED...");
     }
+    fflush(stdout);
     sleep(1);
   }
 
@@ -108,6 +112,10 @@ void enable_raw_input() {
 
   // set terminal settings
   tcsetattr(STDIN_FILENO, TCSANOW, &new_termios);
+  printf("\033[?25l");
 }
 
-void restore_terminal() { tcsetattr(STDIN_FILENO, TCSANOW, &orig_termios); }
+void restore_terminal() {
+  tcsetattr(STDIN_FILENO, TCSANOW, &orig_termios);
+  printf("\033[?25h");
+}

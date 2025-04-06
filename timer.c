@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -14,14 +15,18 @@ void print_intro();
 void restore_terminal();
 void enable_raw_input();
 void enable_non_blocking_input();
+void print_help_msg();
 
 int main(int argc, char *argv[]) {
   int total_seconds;
 
   if (argc < 2) {
-    printf("Not enough arguments: usage of %s\n", argv[0]);
+    printf("Not enough arguments: use `ctimer -h` to veiw help message\n");
     return 1;
   }
+
+  if (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0)
+    print_help_msg();
 
   total_seconds = parse_time(argv[1]);
 
@@ -39,6 +44,16 @@ int main(int argc, char *argv[]) {
   printf("\n\nTime's up 󱫑\n");
 
   return 0;
+}
+
+void print_help_msg() {
+  printf("Usage: timer [duration]\n");
+  printf("Example: timer 1h2m30s\n\n");
+  printf("Controls:\n");
+  printf("  p  Pause/resume\n");
+  printf("  q  Quit early\n");
+
+  exit(0);
 }
 
 int parse_time(const char *arg) {
@@ -96,7 +111,7 @@ void enable_non_blocking_input() {
 }
 
 void print_intro() {
-  printf("Timer started (press 'p' to pause)\n\n");
+  printf("Timer started (press 'p' to pause, 'q' to quit)\n\n");
   printf("Time left:\n");
 }
 
@@ -119,6 +134,12 @@ void run_timer(int total_seconds) {
 
         pause_flag = !pause_flag;
         break;
+      }
+
+      if (user_input == 'q') {
+        printf("\nQuitting early...\n");
+        fflush(stdout);
+        exit(0);
       }
     }
 

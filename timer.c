@@ -28,6 +28,7 @@ int main(int argc, char *argv[]) {
   UserConfig user_config = {
       .time = NULL,
       .alarm_mode = false,
+      .silet_mode = false,
   };
   int total_seconds;
 
@@ -41,6 +42,9 @@ int main(int argc, char *argv[]) {
       print_help_msg();
     else if (strcmp(argv[i], "--alarm") == 0 || strcmp(argv[i], "-a") == 0)
       user_config.alarm_mode = true;
+    else if (strcmp(argv[i], "--silet") == 0 || strcmp(argv[i], "-s") == 0)
+      user_config.silet_mode = true;
+
     else {
       if (user_config.time == NULL)
         user_config.time = argv[i];
@@ -65,7 +69,8 @@ int main(int argc, char *argv[]) {
   print_intro();
   run_timer(total_seconds);
   printf("\n\nTime's up 󱫑\n");
-  run_alarm(user_config.alarm_mode);
+  if (!user_config.silet_mode)
+    run_alarm(user_config.alarm_mode);
 
   return 0;
 }
@@ -73,6 +78,12 @@ int main(int argc, char *argv[]) {
 void print_help_msg() {
   printf("Usage: timer [duration]\n");
   printf("Example: timer 1h2m30s\n\n");
+
+  printf("Optins:\n");
+  printf("--alarm or -a makes noise until you stop it\n");
+  printf("--silet or -s makes no noise\n");
+  printf("\n");
+
   printf("Controls:\n");
   printf("  p  Pause/resume\n");
   printf("  q  Quit early\n");

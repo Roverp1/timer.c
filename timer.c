@@ -1,3 +1,4 @@
+#include "sys/wait.h"
 #include <ctype.h>
 #include <fcntl.h>
 #include <stdbool.h>
@@ -16,6 +17,7 @@ typedef struct {
 } UserConfig;
 
 void print_help_msg();
+char **check_dependencies();
 int parse_time(const char *arg);
 void enable_raw_input();
 void enable_non_blocking_input();
@@ -23,6 +25,8 @@ void print_intro();
 void run_timer(int total_seconds);
 void run_alarm(bool alarm_mode);
 void restore_terminal();
+
+char *dependencies[] = {"play", NULL};
 
 int main(int argc, char *argv[]) {
   UserConfig user_config = {
@@ -32,6 +36,10 @@ int main(int argc, char *argv[]) {
   };
   int total_seconds;
 
+  /*int play_exists = system("command -v playl > /dev/null 2>&1");*/
+  /*printf("%d\n", play_exists);*/
+  /*exit(0);*/
+  /**/
   if (argc <= 1) {
     printf("Not enough arguments: use `ctimer -h` to veiw help message\n");
     return 1;
@@ -89,6 +97,41 @@ void print_help_msg() {
   printf("  q  Quit early\n");
 
   exit(0);
+}
+
+// TODO: FREE THE FUCKIN' SPACE
+char **check_dependencies() {
+  char **unavailable_dependecies = NULL;
+  int unavailable_dependecies_length = 0;
+
+  for (int i = 0; dependencies[i] != NULL; i++) {
+    char check_dep_command[256];
+    int dependency_status;
+
+    snprintf(check_dep_command, sizeof(check_dep_command),
+             "command -v %s > /dev/null 2>&1", dependencies[i]);
+
+    dependency_status = system(check_dep_command);
+
+    if (WIFEXITED(dependency_status) && WEXITSTATUS(dependency_status) != 0) {
+      unavailable_dependecies =
+          realloc(unavailable_dependecies,
+                  (unavailable_dependecies_length + 1) * sizeof(char *));
+
+      unavailable_dependecies[unavailable_dependecies_length] =
+          strdup(dependencies[i]);
+
+      unavailable_dependecies_length++;
+    }
+  }
+  unavailable_dependecies =
+      realloc(unavailable_dependecies,
+              (unavailable_dependecies_length + 1) * sizeof(char *));
+
+  unavailable_dependecies[unavailable_dependecies_length] = NULL;
+  unavailable_dependecies_length++;
+
+  return unavailable_dependecies;
 }
 
 int parse_time(const char *arg) {
@@ -196,7 +239,8 @@ void run_alarm(bool alarm_mode) {
     printf("Press any key to stop alarm...\n");
 
   do {
-    system("play -n synth 0.1 sine 1000 vol 0.5 > /dev/null 2>&1");
+    /*system("play -n synth 0.1 sine 1000 vol 0.5 > /dev/null 2>&1");*/
+    printf("\a");
     sleep(1);
   } while ((user_input = getchar()) == EOF && alarm_mode);
 }

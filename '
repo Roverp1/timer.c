@@ -12,7 +12,6 @@ struct termios orig_termios;
 typedef struct {
   char *time;
   bool alarm_mode;
-  bool silet_mode;
 } UserConfig;
 
 void print_help_msg();
@@ -26,10 +25,12 @@ void restore_terminal();
 
 int main(int argc, char *argv[]) {
   UserConfig user_config = {
-      .time = NULL,
       .alarm_mode = false,
   };
   int total_seconds;
+
+  /*for (int i = 0; i < argc; i++)*/
+  /*  printf("%s\n", argv[i]);*/
 
   if (argc <= 1) {
     printf("Not enough arguments: use `ctimer -h` to veiw help message\n");
@@ -42,16 +43,14 @@ int main(int argc, char *argv[]) {
     else if (strcmp(argv[i], "--alarm") == 0 || strcmp(argv[i], "-a") == 0)
       user_config.alarm_mode = true;
     else {
-      if (user_config.time == NULL)
-        user_config.time = argv[i];
-      else {
-        fprintf(stderr, "Use `ctimer -h` menu for available arguments\n");
-        exit(1);
-      }
+      fprintf(stderr, "Use `ctimer -h` menu for available arguments\n");
+      exit(1);
     }
   }
 
-  total_seconds = parse_time(user_config.time);
+  printf("\nuser_config.alarm_mode = %d\n", user_config.alarm_mode);
+
+  total_seconds = parse_time(argv[1]);
 
   if (total_seconds <= 0) {
     printf("Provide time that is greater than 0\nIn format: 3h2m1s\n");
@@ -180,9 +179,6 @@ void run_timer(int total_seconds) {
 
 void run_alarm(bool alarm_mode) {
   int user_input;
-
-  if (alarm_mode)
-    printf("Press any key to stop alarm...\n");
 
   do {
     system("play -n synth 0.1 sine 1000 vol 0.5 > /dev/null 2>&1");

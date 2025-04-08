@@ -25,8 +25,10 @@ void print_intro();
 void run_timer(int total_seconds);
 void run_alarm(bool alarm_mode);
 void restore_terminal();
+void print_unavailable_dependecies(char **unavailable_dependecies);
+void free_unavailable_dependecies(char **unavailable_dependecies);
 
-char *dependencies[] = {"play", NULL};
+char *dependencies[] = {"play", /*"test1", "test2",*/ NULL};
 
 int main(int argc, char *argv[]) {
   UserConfig user_config = {
@@ -35,11 +37,8 @@ int main(int argc, char *argv[]) {
       .silet_mode = false,
   };
   int total_seconds;
+  char **unavailable_dependecies = check_dependencies();
 
-  /*int play_exists = system("command -v playl > /dev/null 2>&1");*/
-  /*printf("%d\n", play_exists);*/
-  /*exit(0);*/
-  /**/
   if (argc <= 1) {
     printf("Not enough arguments: use `ctimer -h` to veiw help message\n");
     return 1;
@@ -79,6 +78,8 @@ int main(int argc, char *argv[]) {
   printf("\n\nTime's up 󱫑\n");
   if (!user_config.silet_mode)
     run_alarm(user_config.alarm_mode);
+
+  free_unavailable_dependecies(unavailable_dependecies);
 
   return 0;
 }
@@ -239,7 +240,7 @@ void run_alarm(bool alarm_mode) {
     printf("Press any key to stop alarm...\n");
 
   do {
-    /*system("play -n synth 0.1 sine 1000 vol 0.5 > /dev/null 2>&1");*/
+    system("play -n synth 0.1 sine 1000 vol 0.5 > /dev/null 2>&1");
     printf("\a");
     sleep(1);
   } while ((user_input = getchar()) == EOF && alarm_mode);
@@ -248,4 +249,19 @@ void run_alarm(bool alarm_mode) {
 void restore_terminal() {
   tcsetattr(STDIN_FILENO, TCSANOW, &orig_termios);
   printf("\033[?25h");
+}
+
+void print_unavailable_dependecies(char **unavailable_dependecies) {
+  printf("\nList of unavailable_dependecies:\n");
+  for (int i = 0; unavailable_dependecies[i] != NULL; i++) {
+    printf("- %s\t", unavailable_dependecies[i]);
+  }
+  printf("\n\n");
+}
+
+void free_unavailable_dependecies(char **unavailable_dependecies) {
+  for (int i = 0; unavailable_dependecies[i] != NULL; i++) {
+    free(unavailable_dependecies[i]);
+  }
+  free(unavailable_dependecies);
 }

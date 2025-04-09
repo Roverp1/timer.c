@@ -23,21 +23,28 @@ void enable_raw_input();
 void enable_non_blocking_input();
 void print_intro();
 void run_timer(int total_seconds);
-void run_alarm(bool alarm_mode);
+void run_alarm();
 void restore_terminal();
 void print_unavailable_dependecies(char **unavailable_dependecies);
 void free_unavailable_dependecies(char **unavailable_dependecies);
 
+// TODO: MODIFY TO BE AN ARRAY OF STRUCTS: [{depency: "play", required: false},]
 char *dependencies[] = {"play", /*"test1", "test2",*/ NULL};
 
+UserConfig user_config = {
+    .time = NULL,
+    .alarm_mode = false,
+    .silet_mode = false,
+};
+
 int main(int argc, char *argv[]) {
-  UserConfig user_config = {
-      .time = NULL,
-      .alarm_mode = false,
-      .silet_mode = false,
-  };
   int total_seconds;
   char **unavailable_dependecies = check_dependencies();
+
+  /*for (int i = 0; unavailable_dependecies[i] != NULL; i++) {*/
+  /*  if (strcmp(unavailable_dependecies[i], "play") == 0) {*/
+  /*  }*/
+  /*}*/
 
   if (argc <= 1) {
     printf("Not enough arguments: use `ctimer -h` to veiw help message\n");
@@ -75,9 +82,6 @@ int main(int argc, char *argv[]) {
 
   print_intro();
   run_timer(total_seconds);
-  printf("\n\nTime's up 󱫑\n");
-  if (!user_config.silet_mode)
-    run_alarm(user_config.alarm_mode);
 
   free_unavailable_dependecies(unavailable_dependecies);
 
@@ -100,8 +104,8 @@ void print_help_msg() {
   exit(0);
 }
 
-// TODO: FREE THE FUCKIN' SPACE
 char **check_dependencies() {
+  // TODO: IMPLEMENT AMORTISATION or whatever
   char **unavailable_dependecies = NULL;
   int unavailable_dependecies_length = 0;
 
@@ -195,15 +199,22 @@ void print_intro() {
 }
 
 void run_timer(int total_seconds) {
+  int elapsed_seconds = -1;
   bool pause_flag = false;
+  bool overflow_mode = false;
 
-  while (total_seconds >= 0) {
+  while (true) {
     int h = total_seconds / 3600;
     int m = (total_seconds % 3600) / 60;
     int s = ((total_seconds % 3600) % 60);
 
     int user_input;
     while ((user_input = getchar()) != EOF) {
+      if (overflow_mode) {
+        printf("\n");
+        goto exit_timer;
+      }
+
       if (user_input == 'p') {
         if (pause_flag == true)
           printf("\033[2K\033[1A");
@@ -216,34 +227,57 @@ void run_timer(int total_seconds) {
       }
 
       if (user_input == 'q') {
-        printf("\nQuitting early...\n");
+        printf("\nStopping timer...\n");
         fflush(stdout);
-        exit(0);
+        goto exit_timer;
       }
     }
 
-    if (!pause_flag) {
+    if (pause_flag) {
+      printf("\033[2K\rPAUSED...");
+      goto end_iteration;
+    }
+
+    elapsed_seconds++;
+
+    if (total_seconds == 0) {
+      overflow_mode = true;
+      run_alarm();
+      printf("\nTime's up 󱫑 - Press any key to stop.");
+      printf("\033[2F\033[2KOvertime:\033[1B");
+    }
+
+    if (!overflow_mode) {
       printf("\r\033[2K%02d:%02d:%02d", h, m, s);
       total_seconds--;
-    } else {
-      printf("\033[2K\rPAUSED...");
+      goto end_iteration;
     }
+
+    if (user_config.alarm_mode && total_seconds > 1 && total_seconds % 2 == 0)
+      run_alarm();
+
+    printf("\r\033[2K+%02d:%02d:%02d", h, m, s);
+    total_seconds++;
+
+  end_iteration:
     fflush(stdout);
     sleep(1);
   }
+
+exit_timer: {
+  int h = elapsed_seconds / 3600;
+  int m = (elapsed_seconds % 3600) / 60;
+  int s = ((elapsed_seconds % 3600) % 60);
+
+  printf("\nTotal elapsed time: %02d:%02d:%02d\n", h, m, s);
+}
 }
 
-void run_alarm(bool alarm_mode) {
-  int user_input;
+void run_alarm() {
+  if (user_config.silet_mode)
+    return;
 
-  if (alarm_mode)
-    printf("Press any key to stop alarm...\n");
-
-  do {
-    system("play -n synth 0.1 sine 1000 vol 0.5 > /dev/null 2>&1");
-    printf("\a");
-    sleep(1);
-  } while ((user_input = getchar()) == EOF && alarm_mode);
+  system("play -n synth 0.1 sine 1000 vol 0.5 > /dev/null 2>&1");
 }
 
 void restore_terminal() {
@@ -262,6 +296,8 @@ void print_unavailable_dependecies(char **unavailable_dependecies) {
 void free_unavailable_dependecies(char **unavailable_dependecies) {
   for (int i = 0; unavailable_dependecies[i] != NULL; i++) {
     free(unavailable_dependecies[i]);
+    unavailable_dependecies[i] = NULL;
   }
   free(unavailable_dependecies);
+  unavailable_dependecies = NULL;
 }
